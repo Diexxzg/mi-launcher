@@ -215,8 +215,68 @@ public final class LauncherSettingsActivity extends Activity {
                     changed();
                     refresh();
                 })
+                .setPositiveButton("Subir desde el celular", (dialog, which) -> showPhoneUpload())
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    private PhoneUpload phoneUpload;
+    private AlertDialog phoneDialog;
+
+    /** Abre el servidor de subida mientras este cuadro este en pantalla; al cerrarlo se apaga. */
+    private void showPhoneUpload() {
+        stopPhoneUpload();
+        File dir = Config.dir(this);
+        if (dir == null) {
+            Toast.makeText(this, "No hay carpeta de configuración", Toast.LENGTH_LONG).show();
+            return;
+        }
+        PhoneUpload server = new PhoneUpload(new File(dir, "wallpapers"), name -> runOnUiThread(() -> {
+            if (phoneUpload == null || isDestroyed()) return;
+            choices.edit().putString(Config.WALLPAPER_CHOICE_KEY, name).apply();
+            changed();
+            refresh();
+            if (phoneDialog != null) phoneDialog.setMessage(phoneUploadText("Fondo subido y aplicado. Puedes subir otro."));
+        }));
+        if (!server.start()) {
+            Toast.makeText(this, "No se pudo abrir el servidor (puertos 8080-8082 ocupados)", Toast.LENGTH_LONG).show();
+            return;
+        }
+        phoneUpload = server;
+        phoneDialog = new AlertDialog.Builder(this)
+                .setTitle("Subir fondo desde el celular")
+                .setMessage(phoneUploadText(null))
+                .setPositiveButton("Listo", null)
+                .setOnDismissListener(d -> stopPhoneUpload())
+                .show();
+    }
+
+    private String phoneUploadText(String status) {
+        String url = phoneUpload == null ? null : phoneUpload.url();
+        String pin = phoneUpload == null ? "" : phoneUpload.pin();
+        StringBuilder sb = new StringBuilder();
+        if (status != null) sb.append(status).append("\n\n");
+        if (url == null) {
+            sb.append("La TV no tiene red. Conéctala al Wi-Fi y vuelve a abrir este cuadro.");
+        } else {
+            sb.append("1. Conecta el celular al mismo Wi-Fi que la TV.\n")
+              .append("2. Abre en el navegador del celular:\n   ").append(url).append("\n")
+              .append("3. Escribe este código:  ").append(pin);
+        }
+        return sb.toString();
+    }
+
+    private void stopPhoneUpload() {
+        PhoneUpload server = phoneUpload;
+        phoneUpload = null;
+        phoneDialog = null;
+        if (server != null) server.stop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopPhoneUpload();
+        super.onDestroy();
     }
 
     /** Off, then every app with a TV entry point by name. Saved at once; it is read on the next boot. */
