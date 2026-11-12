@@ -17,6 +17,17 @@ android {
         versionName '3.4'
     }
 
+    // Llave fija en el repo (launcher/debug.keystore): sin ella, cada compilacion en GitHub firma con una llave
+    // nueva y la TV rechaza actualizar encima (INSTALL_FAILED_UPDATE_INCOMPATIBLE).
+    signingConfigs {
+        debug {
+            storeFile file('../debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
     buildTypes {
         release {
             // R8 strips and optimises the code (AndroidX included): smaller APK, faster start on a slow TV CPU.
