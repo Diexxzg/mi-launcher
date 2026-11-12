@@ -93,7 +93,16 @@ final class MiHeader {
 
         // "..." en lugar del icono de Entradas (sigue abriendo el mismo menu de entradas).
         if (o.optBoolean("mi_more_button", true) && btnInputs instanceof TextView) {
-            ((TextView) btnInputs).setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_more_horiz, 0, 0, 0);
+            TextView more = (TextView) btnInputs;
+            more.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_more_horiz, 0, 0, 0);
+            // Solo el circulo con los tres puntos: sin la palabra "Entradas" (sigue abriendo el menu de entradas).
+            more.setContentDescription(more.getText());
+            more.setText(null);
+            int pad = Math.round(10 * d);
+            more.setPaddingRelative(pad, 0, pad, 0);
+            more.setCompoundDrawablePadding(0);
+            ViewGroup.LayoutParams mlp = more.getLayoutParams();
+            if (mlp != null) mlp.width = Math.round(42 * d);
         }
     }
 
